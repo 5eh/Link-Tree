@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useEffect, useState, useRef, TouchEvent } from "react";
-import { motion, useTransform, MotionValue } from "framer-motion";
+import React from "react";
+import { motion } from "framer-motion";
 import { ChevronDown, GithubIcon } from "lucide-react";
 import {
   FaGlobe,
@@ -252,159 +252,9 @@ function AnimatedTitle({ title = "Arthur Labs" }: { title?: string }) {
 }
 
 export function BackgroundPaths({ title = "Arthur Labs" }: { title?: string }) {
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [scrollYProgress, setScrollYProgress] = useState(0);
-  const [contentHeight, setContentHeight] = useState(0);
-  const [windowHeight, setWindowHeight] = useState(0);
-  const contentRef = useRef<HTMLDivElement>(null);
-  const [touchStartY, setTouchStartY] = useState<number | null>(null);
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-
-    const updateWindowHeight = () => {
-      setWindowHeight(window.innerHeight);
-    };
-
-    checkMobile();
-    updateWindowHeight();
-
-    window.addEventListener("resize", checkMobile);
-    window.addEventListener("resize", updateWindowHeight);
-
-    return () => {
-      window.removeEventListener("resize", checkMobile);
-      window.removeEventListener("resize", updateWindowHeight);
-    };
-  }, []);
-
-  useEffect(() => {
-    const updateContentHeight = () => {
-      if (contentRef.current) {
-        // Subtract some height to remove the extra padding at the bottom
-        setContentHeight(contentRef.current.scrollHeight - 200);
-      }
-    };
-
-    updateContentHeight();
-
-    window.addEventListener("resize", updateContentHeight);
-
-    const timer = setTimeout(updateContentHeight, 1000);
-
-    return () => {
-      window.removeEventListener("resize", updateContentHeight);
-      clearTimeout(timer);
-    };
-  }, []);
-
-  useEffect(() => {
-    const handleWheel = (e: WheelEvent) => {
-      e.preventDefault();
-
-      if (scrollContainerRef.current) {
-        const sensitivity = isMobile ? 0.003 : 0.001;
-        const newScrollY = Math.min(
-          Math.max(scrollYProgress + e.deltaY * sensitivity, 0),
-          1,
-        );
-        setScrollYProgress(newScrollY);
-      }
-    };
-
-    const container = scrollContainerRef.current;
-    if (container) {
-      container.addEventListener("wheel", handleWheel, { passive: false });
-    }
-
-    return () => {
-      if (container) {
-        container.removeEventListener("wheel", handleWheel);
-      }
-    };
-  }, [scrollYProgress, isMobile]);
-
-  const handleTouchStart = (e: TouchEvent) => {
-    setTouchStartY(e.touches[0].clientY);
-  };
-
-  const handleTouchMove = (e: TouchEvent) => {
-    if (touchStartY === null) return;
-
-    const touchY = e.touches[0].clientY;
-    const diff = touchStartY - touchY;
-
-    const sensitivity = 0.002;
-    const newScrollY = Math.min(
-      Math.max(scrollYProgress + diff * sensitivity, 0),
-      1,
-    );
-
-    setScrollYProgress(newScrollY);
-    setTouchStartY(touchY);
-  };
-
-  const handleTouchEnd = () => {
-    setTouchStartY(null);
-  };
-
-  useEffect(() => {
-    if (scrollContainerRef.current) {
-      document.body.style.overflow = "hidden";
-      document.documentElement.style.overflow = "hidden";
-    }
-
-    return () => {
-      document.body.style.overflow = "";
-      document.documentElement.style.overflow = "";
-    };
-  }, []);
-
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-      },
-    },
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        type: "spring",
-        stiffness: 300,
-        damping: 20,
-      },
-    },
-  };
-
-  const scrollYMotionValue = useRef(new MotionValue(0));
-
-  useEffect(() => {
-    scrollYMotionValue.current.set(scrollYProgress);
-  }, [scrollYProgress]);
-
-  const contentY = useTransform(
-    scrollYMotionValue.current,
-    [0, 1],
-    [0, -contentHeight + (windowHeight * 0.8 || 600)], // Default 600px if windowHeight is 0
-  );
-
   return (
     <div
-      ref={scrollContainerRef}
-      className="fixed inset-0 w-full h-screen bg-black text-white overflow-hidden font-unbounded"
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
+      className="w-full min-h-screen bg-black text-white overflow-auto font-unbounded"
     >
       <div className="absolute inset-0">
         <FloatingPaths position={1} />
@@ -413,19 +263,12 @@ export function BackgroundPaths({ title = "Arthur Labs" }: { title?: string }) {
 
       <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black to-transparent z-10 pointer-events-none"></div>
 
-      <motion.div
-        ref={contentRef}
-        style={{ y: contentY }}
+      <div
         className="relative z-20 w-full font-unbounded"
       >
         <div className="container mx-auto px-4 py-16">
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={containerVariants}
-            className="max-w-5xl mx-auto"
-          >
-            <motion.div variants={itemVariants} className="text-center mb-16">
+          <div className="max-w-5xl mx-auto">
+            <div className="text-center mb-16">
               <AnimatedTitle title={title} />
 
               <div className="mb-8">
@@ -447,14 +290,13 @@ export function BackgroundPaths({ title = "Arthur Labs" }: { title?: string }) {
                   />
                 </Button>
               </div>
-            </motion.div>
+            </div>
 
             {/* Links by category */}
             <div className="space-y-12">
               {categories.map((category) => (
-                <motion.div
+                <div
                   key={category}
-                  variants={itemVariants}
                   className="space-y-6 font-unbounded"
                 >
                   <h2 className="text-3xl font-bold text-center mb-8 font-unbounded text-white">
@@ -465,18 +307,12 @@ export function BackgroundPaths({ title = "Arthur Labs" }: { title?: string }) {
                     {links
                       .filter((link) => link.category === category)
                       .map((link) => (
-                        <motion.a
+                        <a
                           key={link.name}
                           href={link.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="group block"
-                          variants={itemVariants}
-                          whileHover={{
-                            scale: 1.02,
-                            transition: { duration: 0.2 },
-                          }}
-                          whileTap={{ scale: 0.98 }}
+                          className="group block hover:scale-[1.02] active:scale-[0.98] transition-transform"
                         >
                           <div className="relative overflow-hidden rounded-2xl backdrop-blur-xl  border-white/30 p-6 h-full transition-all duration-300 group-hover:border-cyan-400/30 border-2 group-hover:bg-black/70 group-hover:shadow-lg font-unbounded">
                             <div className="relative z-10 flex flex-col items-center text-center space-y-4">
@@ -498,18 +334,18 @@ export function BackgroundPaths({ title = "Arthur Labs" }: { title?: string }) {
                               </div>
                             </div>
                           </div>
-                        </motion.a>
+                        </a>
                       ))}
                   </div>
-                </motion.div>
+                </div>
               ))}
             </div>
-          </motion.div>
+          </div>
         </div>
         <div className="pb-8">
           <Footer />
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }
