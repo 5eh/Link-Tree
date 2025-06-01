@@ -259,10 +259,18 @@ export function BackgroundPaths({ title = "Arthur Labs" }: { title?: string }) {
   const contentRef = useRef<HTMLDivElement>(null);
   const [touchStartY, setTouchStartY] = useState<number | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [lastTouchY, setLastTouchY] = useState(0);
+  const [touchVelocity, setTouchVelocity] = useState(0);
+  const lastScrollTime = useRef(Date.now());
+  const isScrolling = useRef(false);
+  const [useNativeScroll, setUseNativeScroll] = useState(false);
+
 
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
+      const isMobileDevice = window.innerWidth < 768;
+      setIsMobile(isMobileDevice);
+      setUseNativeScroll(!isMobileDevice); // Use native scroll for desktop
     };
 
     const updateWindowHeight = () => {
@@ -302,66 +310,152 @@ export function BackgroundPaths({ title = "Arthur Labs" }: { title?: string }) {
   }, []);
 
   useEffect(() => {
+    // Only apply custom wheel behavior on mobile
+    if (useNativeScroll) {
+      return; // Use default scroll on desktop
+    }
+
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
 
       if (scrollContainerRef.current) {
-        const sensitivity = isMobile ? 0.003 : 0.001;
-        const newScrollY = Math.min(
+        // Get current time to calculate time difference since last scroll
+        const now = Date.now();
+        const timeDelta = now - lastScrollTime.current;
+        lastScrollTime.current = now;
+        
+        // Mobile-optimized sensitivity
+        const sensitivity = 0.0005;
+        
+        // Calculate dampingFactor based on time delta for consistent experience
+        const baseDamping = 0.12;
+        const dampingFactor = Math.min(baseDamping * (1 + 30 / Math.max(timeDelta, 1)), 0.4);
+        
+        // Calculate target scroll position with sensitivity applied
+        const targetScrollY = Math.min(
           Math.max(scrollYProgress + e.deltaY * sensitivity, 0),
           1,
         );
+        
+        // Smooth scrolling with adaptive damping
+        const newScrollY = scrollYProgress + (targetScrollY - scrollYProgress) * dampingFactor;
+        
         setScrollYProgress(newScrollY);
+        isScrolling.current = true;
+        
+        // Set a timeout to clear the scrolling state
+        setTimeout(() => {
+          isScrolling.current = false;
+        }, 150);
       }
     };
 
     const container = scrollContainerRef.current;
-    if (container) {
+    if (container && isMobile) {
       container.addEventListener("wheel", handleWheel, { passive: false });
     }
 
     return () => {
-      if (container) {
+      if (container && isMobile) {
         container.removeEventListener("wheel", handleWheel);
       }
     };
-  }, [scrollYProgress, isMobile]);
+  }, [scrollYProgress, isMobile, useNativeScroll]);
 
   const handleTouchStart = (e: TouchEvent) => {
-    setTouchStartY(e.touches[0].clientY);
+    const touchY = e.touches[0].clientY;
+    setTouchStartY(touchY);
+    setLastTouchY(touchY);
+    setTouchVelocity(0);
+    lastScrollTime.current = Date.now();
   };
 
   const handleTouchMove = (e: TouchEvent) => {
     if (touchStartY === null) return;
 
+    const now = Date.now();
+    const timeDelta = now - lastScrollTime.current;
+    lastScrollTime.current = now;
+    
     const touchY = e.touches[0].clientY;
     const diff = touchStartY - touchY;
-
-    const sensitivity = 0.002;
-    const newScrollY = Math.min(
+    
+    // Calculate velocity (pixels per ms)
+    const instantVelocity = (lastTouchY - touchY) / Math.max(timeDelta, 1);
+    // Smooth the velocity with some decay
+    const newVelocity = touchVelocity * 0.8 + instantVelocity * 0.2;
+    setTouchVelocity(newVelocity);
+    
+    // Much lower sensitivity for mobile touch scrolling
+    // Adjust based on velocity - slower gestures are more precise
+    const velocityFactor = Math.min(Math.abs(newVelocity) * 1000, 1);
+    const sensitivity = 0.0004 * (1 + velocityFactor * 0.2);
+    
+    // Apply damping for smoother scrolling - less damping for faster gestures
+    const dampingFactor = 0.1 + velocityFactor * 0.03;
+    
+    const targetScrollY = Math.min(
       Math.max(scrollYProgress + diff * sensitivity, 0),
       1,
     );
+    
+    // Apply smooth interpolation
+    const newScrollY = scrollYProgress + (targetScrollY - scrollYProgress) * dampingFactor;
 
     setScrollYProgress(newScrollY);
     setTouchStartY(touchY);
+    setLastTouchY(touchY);
+    
+    isScrolling.current = true;
   };
 
   const handleTouchEnd = () => {
     setTouchStartY(null);
+    
+    // Add inertia effect - less inertia on mobile for more control
+  if (Math.abs(touchVelocity) > 0.1) {
+    const decayFactor = 0.88;
+    const initialVelocity = touchVelocity;
+    let currentVelocity = initialVelocity;
+      
+      const applyInertia = () => {
+        if (Math.abs(currentVelocity) < 0.01 || !isScrolling.current) return;
+        
+        currentVelocity *= decayFactor;
+        const inertiaChange = currentVelocity * 10; // Scale for reasonable movement
+        
+        setScrollYProgress((prev) => {
+          return Math.min(Math.max(prev - inertiaChange, 0), 1);
+        });
+        
+        requestAnimationFrame(applyInertia);
+      };
+      
+      requestAnimationFrame(applyInertia);
+    }
+    
+    // Clear scrolling state after some time
+    setTimeout(() => {
+      isScrolling.current = false;
+    }, 150);
   };
 
   useEffect(() => {
-    if (scrollContainerRef.current) {
+    // Only apply custom overflow handling for mobile
+    if (scrollContainerRef.current && isMobile) {
       document.body.style.overflow = "hidden";
       document.documentElement.style.overflow = "hidden";
+    } else if (scrollContainerRef.current) {
+      // For desktop, allow normal scrolling
+      document.body.style.overflow = "";
+      document.documentElement.style.overflow = "";
     }
 
     return () => {
       document.body.style.overflow = "";
       document.documentElement.style.overflow = "";
     };
-  }, []);
+  }, [isMobile]);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -388,23 +482,49 @@ export function BackgroundPaths({ title = "Arthur Labs" }: { title?: string }) {
 
   const scrollYMotionValue = useRef(new MotionValue(0));
 
+  // Add smooth transition to scroll motion
   useEffect(() => {
-    scrollYMotionValue.current.set(scrollYProgress);
-  }, [scrollYProgress]);
+    if (useNativeScroll) {
+      // For desktop, just set the value directly
+      scrollYMotionValue.current.set(scrollYProgress);
+      return;
+    }
+    
+    // Use a smoother transition to update the motion value for mobile
+    const animateToValue = () => {
+      const diff = scrollYProgress - scrollYMotionValue.current.get();
+      if (Math.abs(diff) < 0.001) {
+        scrollYMotionValue.current.set(scrollYProgress);
+        return;
+      }
+      
+      // Apply some easing based on whether user is actively scrolling
+      const easeFactor = isScrolling.current ? 0.12 : 0.08;
+      const newValue = scrollYMotionValue.current.get() + diff * easeFactor;
+      scrollYMotionValue.current.set(newValue);
+      
+      requestAnimationFrame(animateToValue);
+    };
+    
+    const animationFrame = requestAnimationFrame(animateToValue);
+    
+    return () => cancelAnimationFrame(animationFrame);
+  }, [scrollYProgress, isMobile, useNativeScroll]);
 
+  // Add spring effect to the scroll motion
   const contentY = useTransform(
     scrollYMotionValue.current,
     [0, 1],
-    [0, -contentHeight + (windowHeight * 0.8 || 600)], // Default 600px if windowHeight is 0
+    [0, -contentHeight + (windowHeight * (isMobile ? 0.8 : 0.7) || 600)] // Default 600px if windowHeight is 0, less padding on desktop for more content
   );
 
   return (
     <div
       ref={scrollContainerRef}
-      className="fixed inset-0 w-full h-screen bg-black text-white overflow-hidden font-unbounded"
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
+      className={`fixed inset-0 w-full h-screen bg-black text-white font-unbounded ${useNativeScroll ? 'overflow-auto' : 'overflow-hidden'}`}
+      onTouchStart={isMobile ? handleTouchStart : undefined}
+      onTouchMove={isMobile ? handleTouchMove : undefined}
+      onTouchEnd={isMobile ? handleTouchEnd : undefined}
     >
       <div className="absolute inset-0">
         <FloatingPaths position={1} />
@@ -415,7 +535,7 @@ export function BackgroundPaths({ title = "Arthur Labs" }: { title?: string }) {
 
       <motion.div
         ref={contentRef}
-        style={{ y: contentY }}
+        style={useNativeScroll ? {} : { y: contentY }}
         className="relative z-20 w-full font-unbounded"
       >
         <div className="container mx-auto px-4 py-16">
