@@ -17,6 +17,9 @@ import {
 } from "react-icons/fa";
 import Footer from "./footer";
 import { GiTempleDoor } from "react-icons/gi";
+import { BiBitcoin } from "react-icons/bi";
+import { FaGlasses } from "react-icons/fa6";
+import { LuBrain } from "react-icons/lu";
 
 function Button({
   children,
@@ -134,7 +137,7 @@ const links: LinkItem[] = [
   {
     name: "Watson LR",
     url: "https://watson.arthurlabs.net/",
-    icon: <FaFileAlt className="h-6 w-6" />,
+    icon: <FaGlasses className="h-6 w-6" />,
     category: "Resources",
     description: "Founders Portfolio",
   },
@@ -151,6 +154,20 @@ const links: LinkItem[] = [
     icon: <GithubIcon className="h-6 w-6" />,
     category: "Resources",
     description: "GitHub Repository",
+  },
+  {
+    name: "Blogs & Docs",
+    url: "https://docs.arthurlabs.net/",
+    icon: <LuBrain className="h-6 w-6" />,
+    category: "Resources",
+    description: "Blogs and analysis for Arthur Labs",
+  },
+  {
+    name: "Fund The World",
+    url: "https://fundtheworld.arthurlabs.net/",
+    icon: <BiBitcoin className="h-6 w-6" />,
+    category: "Resources",
+    description: "A Bitcoin adoption tool for organization distribution",
   },
 ];
 
@@ -238,6 +255,7 @@ export function BackgroundPaths({ title = "Arthur Labs" }: { title?: string }) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [scrollYProgress, setScrollYProgress] = useState(0);
   const [contentHeight, setContentHeight] = useState(0);
+  const [windowHeight, setWindowHeight] = useState(0);
   const contentRef = useRef<HTMLDivElement>(null);
   const [touchStartY, setTouchStartY] = useState<number | null>(null);
   const [isMobile, setIsMobile] = useState(false);
@@ -247,11 +265,19 @@ export function BackgroundPaths({ title = "Arthur Labs" }: { title?: string }) {
       setIsMobile(window.innerWidth < 768);
     };
 
+    const updateWindowHeight = () => {
+      setWindowHeight(window.innerHeight);
+    };
+
     checkMobile();
+    updateWindowHeight();
+
     window.addEventListener("resize", checkMobile);
+    window.addEventListener("resize", updateWindowHeight);
 
     return () => {
       window.removeEventListener("resize", checkMobile);
+      window.removeEventListener("resize", updateWindowHeight);
     };
   }, []);
 
@@ -369,7 +395,7 @@ export function BackgroundPaths({ title = "Arthur Labs" }: { title?: string }) {
   const contentY = useTransform(
     scrollYMotionValue.current,
     [0, 1],
-    [0, -contentHeight + window.innerHeight * 0.8],
+    [0, -contentHeight + (windowHeight * 0.8 || 600)], // Default 600px if windowHeight is 0
   );
 
   return (
