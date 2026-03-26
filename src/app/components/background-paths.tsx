@@ -2,7 +2,13 @@
 
 import React from "react";
 import { motion } from "framer-motion";
-import { ChevronDown, GithubIcon } from "lucide-react";
+import {
+  ChevronDown,
+  ComputerIcon,
+  DollarSign,
+  DollarSignIcon,
+  GithubIcon,
+} from "lucide-react";
 import {
   FaGlobe,
   FaLinkedin,
@@ -20,6 +26,7 @@ import { GiTempleDoor } from "react-icons/gi";
 import { BiBitcoin } from "react-icons/bi";
 import { FaGlasses } from "react-icons/fa6";
 import { LuBrain } from "react-icons/lu";
+import Link from "next/link";
 
 function Button({
   children,
@@ -72,11 +79,11 @@ const links: LinkItem[] = [
     description: "Website Development Services.",
   },
   {
-    name: "Susan",
-    url: "https://susan.arthurlabs.net/",
+    name: "HIIE",
+    url: "https://hiie.arthurlabs.net/",
     icon: <FaGlassMartiniAlt className="h-6 w-6" />,
     category: "Services",
-    description: "Autonomous Application Development Agency.",
+    description: "Hyper Intelligent Innovation Engine Whitepaper.",
   },
   {
     name: "Web3 Bazaar Production",
@@ -84,6 +91,20 @@ const links: LinkItem[] = [
     icon: <GiTempleDoor className="h-6 w-6" />,
     category: "Services",
     description: "A Demo of our marketplace production",
+  },
+  {
+    name: "Registered Agentics",
+    url: "https://registeredagentics.ai/",
+    icon: <ComputerIcon className="h-6 w-6" />,
+    category: "Services",
+    description: "Legalize your AI in Wyoming.",
+  },
+  {
+    name: "1099-DA Tax Form",
+    url: "https://crypto.arthurlabs.net/",
+    icon: <DollarSign className="h-6 w-6" />,
+    category: "Services",
+    description: "Digital asset tax form assistnace.",
   },
   {
     name: "Podcast",
@@ -253,9 +274,7 @@ function AnimatedTitle({ title = "Arthur Labs" }: { title?: string }) {
 
 export function BackgroundPaths({ title = "Arthur Labs" }: { title?: string }) {
   return (
-    <div
-      className="w-full min-h-screen bg-black text-white overflow-auto font-unbounded"
-    >
+    <div className="w-full min-h-screen bg-black text-white overflow-auto font-unbounded">
       <div className="absolute inset-0">
         <FloatingPaths position={1} />
         <FloatingPaths position={-1} />
@@ -263,9 +282,7 @@ export function BackgroundPaths({ title = "Arthur Labs" }: { title?: string }) {
 
       <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black to-transparent z-10 pointer-events-none"></div>
 
-      <div
-        className="relative z-20 w-full font-unbounded"
-      >
+      <div className="relative z-20 w-full font-unbounded">
         <div className="container mx-auto px-4 py-16">
           <div className="max-w-5xl mx-auto">
             <div className="text-center mb-16">
@@ -276,12 +293,15 @@ export function BackgroundPaths({ title = "Arthur Labs" }: { title?: string }) {
                   className="group h-auto gap-4 py-3 text-left px-6 backdrop-blur-3xl bg-black/40 hover:bg-black/70"
                   variant="outline"
                 >
-                  <div className="space-y-1">
+                  <Link
+                    href="https://builder.arthurlabs.net"
+                    className="space-y-1"
+                  >
                     <h3 className="font-unbounded">We do a lot of things 😎</h3>
                     <p className="whitespace-break-spaces font-unbounded font-normal text-white/70">
                       Check our portfolio for our creative works.
                     </p>
-                  </div>
+                  </Link>
                   <ChevronDown
                     className="opacity-60 transition-transform group-hover:translate-x-0.5"
                     size={16}
@@ -295,10 +315,7 @@ export function BackgroundPaths({ title = "Arthur Labs" }: { title?: string }) {
             {/* Links by category */}
             <div className="space-y-12">
               {categories.map((category) => (
-                <div
-                  key={category}
-                  className="space-y-6 font-unbounded"
-                >
+                <div key={category} className="space-y-6 font-unbounded">
                   <h2 className="text-3xl font-bold text-center mb-8 font-unbounded text-white">
                     {category}
                   </h2>
