@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Unbounded } from "next/font/google";
+import EcosystemBar from "@/components/EcosystemBar";
 import "./globals.css";
 
 const unbounded = Unbounded({
@@ -136,7 +137,10 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${unbounded.variable} antialiased`}>{children}</body>
+      <body className={`${unbounded.variable} antialiased`}>
+        <EcosystemBar />
+        {children}
+      </body>
     </html>
   );
 }
